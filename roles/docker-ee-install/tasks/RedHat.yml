@@ -1,0 +1,86 @@
+---
+#
+# Pre installation tasks.
+#
+- include_tasks: ".unix.pre.yml"
+
+#
+#
+#
+
+- name: "Add Docker EE URL to yum."
+  copy:
+    content: "{{ docker_ee_repository_url }}"
+    dest: /etc/yum/vars/dockerurl
+
+- name: "Install dependencies."
+  yum:
+    name: "{{ package }}"
+    state: present
+  with_items:
+    - yum-utils
+    - device-mapper-persistent-data
+    - lvm2
+  loop_control:
+    loop_var: package
+
+#
+#
+#
+
+- name: "Add Docker GPG key (from {{ docker_ee_repository_url }}/gpg }}."
+  rpm_key:
+    key: "{{ docker_ee_repository_url }}/gpg"
+    state: present
+  register: add_repository_key
+  ignore_errors: true
+
+- name: "Ensure curl is present (on older systems without SNI)."
+  yum:
+    name: curl
+    state: latest
+  when: add_repository_key | failed
+
+- name: "Download GPG key (alternative for older systems without SNI)."
+  shell: "curl -sSL {{ docker_ee_repository_url }}/gpg -o /tmp/storebits.gpg"
+  args:
+    warn: no
+  when: add_repository_key | failed
+
+- name: "Add Docker apt key (alternative for older systems without SNI)."
+  shell: "rpm --import /tmp/storebits.gpg"
+  args:
+    warn: no
+  when: add_repository_key | failed
+
+#
+#
+#
+- name: "Add Docker EE repository {{ docker_ee_release_channel }}-{{ docker_ee_version }}."
+  yum_repository:
+    name: "docker-ee.repo"
+    description: "Add Docker EE repository"
+    baseurl: "{{ docker_ee_repository_url }}/{{ ansible_distribution_major_version }}/x86_64/{{ docker_ee_repository }}"
+    state: present
+
+- name: "Set 'docker_ee_package' fact."
+  set_fact:
+    docker_ee_package: docker-ee
+  when: docker_ee_version == "latest"
+
+- name: "Set 'docker_ee_package' fact."
+  set_fact:
+    docker_ee_package: "docker-ee-{{ docker_ee_version }}"
+  when: docker_ee_version != "latest"
+
+- name: "Install Docker EE (version: {{ docker_ee_package_version }})."
+  yum:
+    name: "docker-ee-{{ docker_ee_package_version }}"
+    state: present
+    disable_gpg_check: true
+
+#
+# Post installation tasks.
+#
+
+- include_tasks: ".unix.post.yml"

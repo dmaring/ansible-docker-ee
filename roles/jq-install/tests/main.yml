@@ -1,0 +1,12 @@
+---
+- hosts: all
+  roles:
+    - jq-install
+
+- hosts: all
+  tasks:
+    - copy: content='{"foo":[{"bar":"baz"}]}' dest=/tmp/test.json
+    - shell: jq '.foo[0].bar' /tmp/test.json
+      register: output
+    - assert:
+        that: "{{ output.stdout_lines[0] == '\"baz\"' }}"

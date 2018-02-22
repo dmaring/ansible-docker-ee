@@ -1,0 +1,12 @@
+---
+- name: Check if already active.
+  win_shell: "docker info --format '{{ '{{' }}.Swarm.LocalNodeState {{ '}}' }}'"
+  register: swarm_node_status
+
+- name:
+  win_shell: "docker run --rm {{ docker_ucp_image_repository }}/ucp-agent-win:{{ docker_ucp_version }} windows-script {% if use_dev_version | default(False) %} --image-version dev: {% endif %} | powershell -noprofile -noninteractive -command 'Invoke-Expression -Command $input'"
+  when: "swarm_node_status['stdout_lines'][0] == 'inactive'"
+
+- name: Join Docker Swarm.
+  win_shell: docker swarm join --token "{{ hostvars[groups[docker_swarm_leader][0]][docker_swarm_token_type].stdout }}" "{{ hostvars[groups[docker_swarm_leader][0]]['ansible_default_ipv4']['address'] }}"
+  when: "swarm_node_status['stdout_lines'][0] == 'inactive'"

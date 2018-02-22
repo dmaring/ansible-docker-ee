@@ -1,0 +1,3 @@
+---
+expected_docker_swarm_workers: 3
+expected_docker_swarm_managers: 3

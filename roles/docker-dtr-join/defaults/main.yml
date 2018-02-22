@@ -1,0 +1,8 @@
+---
+# Package.
+docker_dtr_image_repository: docker
+docker_dtr_version: latest
+
+# UCP.
+docker_ucp_username: admin
+docker_ucp_lb: "{{ hostvars[groups[ucp_nodes][0]]['ansible_host'] }}"

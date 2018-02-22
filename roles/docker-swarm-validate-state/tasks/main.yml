@@ -1,0 +1,14 @@
+---
+- name: Get number of Docker Swarm workers.
+  shell: curl -sS -q --unix-socket /var/run/docker.sock http:/nodes | jq 'map_values(.ManagerStatus) | map(select(. == null)) | length'
+  register: _number_of_swarm_workers
+
+- name: Get number of Docker Swarm managers.a
+  shell: curl -sS -q --unix-socket /var/run/docker.sock http:/nodes | jq 'map_values(.ManagerStatus) | map(select(. == null | not)) | length'
+  register: _number_of_swarm_managers
+
+- assert:
+    that:
+    - "_number_of_swarm_workers.stdout == expected_docker_swarm_workers"
+    - "_number_of_swarm_managers.stdout == expected_docker_swarm_managers"
+    msg: "'_number_of_swarm_managers' must be exactly {{ expected_docker_swarm_managers }} and '_number_of_swarm_workers' must be exactly {{ expected_docker_swarm_workers }}."

@@ -1,0 +1,31 @@
+---
+#
+# Docker EE.
+#
+
+# docker_ee_version: latest
+# docker_ee_subscriptions_ubuntu: <placeholder> # Format: sub-xxx-xxx-xxx-xxx
+# docker_ee_subscriptions_centos: <placeholder> # Format: sub-xxx-xxx-xxx-xxx
+# docker_ee_subscriptions_redhat: <placeholder> # Format: sub-xxx-xxx-xxx-xxx
+
+#
+# UCP.
+#
+
+# FIXME: Cannot be in ucp because the password is also used by dtr.
+# docker_ucp_admin_password: <placeholder>
+
+# Cannot be in ucp because the UCP DNS name is also used by dtr.
+# DNS name of the UCP load balancer endpoint (e.g. "ucp.example.com").
+# This is also used for the SAN (subject alternative names) in any generated UCP certificate,
+# and as the address which DTR nodes will use to contact UCP.
+# docker_ucp_lb: <placeholder>
+
+#
+# Cloudstor
+#
+
+cloudstor_plugin_version: 18.01.0-ce
+
+# If defined, the playbook will install the Cloudstor plugin with these settings on each node:
+# cloudstor_plugin_options: "CLOUD_PLATFORM=AWS EFS_ID_REGULAR=fs-AAA EFS_ID_MAXIO=fs-BBB EFS_SUPPORTED=1 AWS_STACK_ID=S2UCVL19bO2DOhi6"

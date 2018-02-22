@@ -1,0 +1,36 @@
+---
+- name: "Pull DTR (version: {{ docker_dtr_version }})."
+  docker_image:
+    name: "{{ docker_dtr_image_repository }}/dtr:{{ docker_dtr_version }}"
+
+- name: "Check if DTR is already running."
+  shell: "docker container ls -q --filter name=dtr-registry-{{ docker_dtr_replica_id }}"
+  register: _already_running
+
+- name: "Set is_already_running fact."
+  set_fact:
+    already_running: "{{ _already_running.stdout_lines | length > 0 }}"
+
+- name: "Install DTR (version: {{ docker_dtr_version }})."
+  docker_container:
+    name: dtr
+    image: "{{ docker_dtr_image_repository }}/dtr:{{ docker_dtr_version }}"
+    detach: false
+    env:
+      UCP_ADMIN_PASSWORD: "{{ docker_ucp_admin_password }}"
+    command: |
+      install
+      --replica-https-port "{{ replica_https_port }}"
+      --replica-http-port "{{ replica_http_port }}"
+      --ucp-url "{{ docker_ucp_lb }}"
+      --ucp-node "{{ ansible_nodename }}"
+      --dtr-external-url "{{ docker_dtr_lb }}"
+      --ucp-username "{{ docker_ucp_username }}"
+      --ucp-password "{{ docker_ucp_admin_password }}"
+      --ucp-insecure-tls
+      --replica-id "{{ docker_dtr_replica_id }}"
+  when: not already_running
+
+- name: "Wait for Docker DTR to be accessible on {{ replica_https_port }}."
+  wait_for:
+    port: "{{ replica_https_port }}"

@@ -1,0 +1,32 @@
+---
+#
+# Set facts.
+#
+
+- name: "Set 'repository' and 'docker_ee_package' facts."
+  set_fact:
+    docker_ee_repository: "{{ docker_ee_release_channel }}-{{ docker_ee_version }}"
+    docker_ee_package: "docker-ee-{{ docker_ee_version }}"
+  when: docker_ee_version != "latest"
+
+- name: "Set 'repository' and 'docker_ee_package' facts."
+  set_fact:
+    docker_ee_repository: "{{ docker_ee_release_channel }}"
+    docker_ee_package: docker-ee
+  when: docker_ee_version == "latest"
+
+#
+# Remove previously installed versions of Docker.
+#
+
+- name: "Ensure old versions of Docker are not installed."
+  package:
+    name: '{{ package }}'
+    state: absent
+  with_items:
+    - docker
+    - docker-ce
+    - docker-common
+    - docker-engine
+  loop_control:
+    loop_var: package

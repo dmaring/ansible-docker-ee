@@ -1,0 +1,77 @@
+---
+- name: "Check if UCP is running."
+  shell: "docker service ls -q --filter name=ucp-agent"
+  register: _already_running
+
+- name: "Set is_already_running fact."
+  set_fact:
+    already_running: "{{ _already_running.stdout_lines | length > 0 }}"
+
+- name: "Pull UCP (version: {{ docker_ucp_version }})."
+  docker_image:
+    name: "{{ docker_ucp_image_repository }}/ucp:{{ docker_ucp_version }}"
+  when: not already_running
+
+- name: "Check for certificate."
+  local_action: stat path="{{ role_path }}/../../{{ docker_ucp_certificate_directory }}/cert.pm"
+  become: no
+  register: certificate_stat
+  when: not already_running
+
+- name: "Create volume for certificates."
+  docker_volume:
+    name: ucp-controller-server-certs
+    state: present
+  when: not already_running and certificate_stat.stat.exists == true
+
+- name: "Get volume path"
+  shell: "docker volume inspect ucp-controller-server-certs --format '{{ '{{' }}.Mountpoint {{ '}}' }}'"
+  register: certificates_volume
+  when: not already_running and certificate_stat.stat.exists == true
+
+- name: "Copy certificate"
+  copy:
+    src: "{{ role_path }}/../../{{ docker_ucp_certificate_directory }}/{{ file }}"
+    dest: "{{ certificates_volume.stdout_lines[0] }}/{{ file }}"
+  with_items:
+    - "ca.pem"
+    - "cert.pem"
+    - "key.pem"
+  loop_control:
+    loop_var: file
+  when: not already_running and certificate_stat.stat.exists == true
+
+- set_fact:
+    user_defined_certificate: --external-server-cert
+  when: not already_running and certificate_stat.stat.exists == true
+
+- name: "Check for license file."
+  local_action: stat path="{{ role_path }}/../../{{ docker_ucp_license }}"
+  become: no
+  register: license_stat
+  when: not already_running
+
+- name: "Copy license."
+  copy:
+    src: "{{ role_path }}/../../{{ docker_ucp_license }}"
+    dest: "/tmp/docker_subscription.lic"
+  when: not already_running and license_stat.stat.exists == true
+
+- name: "Install UCP (version: {{ docker_ucp_version }})."
+  docker_container:
+    name: ucp
+    detach: false
+    image: "{{ docker_ucp_image_repository }}/ucp:{{ docker_ucp_version }}"
+    volumes:
+    - "/var/run/docker.sock:/var/run/docker.sock"
+    - "/tmp/docker_subscription.lic:/config/docker_subscription.lic"
+    env:
+      UCP_ADMIN_USERNAME: "{{ docker_ucp_admin_username }}"
+      UCP_ADMIN_PASSWORD: "{{ docker_ucp_admin_password }}"
+    command: |
+      install
+      {% if use_dev_version | default(False) %} --image-version "dev:" {% endif %}
+      --host-address "{{ ansible_default_ipv4['address'] }}"
+      --san "{{ docker_ucp_lb }}"
+      {{ user_defined_certificate | default('--')}}
+  when: not already_running

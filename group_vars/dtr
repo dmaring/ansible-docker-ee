@@ -1,0 +1,7 @@
+---
+#docker_dtr_version: latest
+# docker_dtr_replica_id: <placeholder> # (A 12-character long hexadecimal number: e.g. 1234567890ab)
+
+# DNS name of the DTR load balancer endpoint (e.g. "dtr.example.com").
+# This is also used for the SAN (subject alternative names) in any generated DTR certificate.
+# docker_dtr_lb: <placeholder>

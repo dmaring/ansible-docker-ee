@@ -1,0 +1,9 @@
+# it is suggested that these be encrypted with ansible-vault:
+# ansible-vault edit group_vars/windows.yml
+windows_enabled: yes
+#ansible_port: 5986
+ansible_connection: winrm
+ansible_winrm_server_cert_validation: ignore
+ansible_become: no
+#ansible_user: Administrator
+#ansible_password:

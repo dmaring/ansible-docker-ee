@@ -1,0 +1,35 @@
+---
+#
+# Include global and platform-specific variables.
+#
+- include_vars: "main.yml"
+
+- include_vars: "{{ os_family }}.yml"
+  when: ansible_os_family == os_family
+  with_items:
+    - "Debian"
+    - "Windows"
+    - "RedHat"
+  loop_control:
+    loop_var: os_family
+
+- include_vars: "RedHat/{{ distribution }}.yml"
+  when: distribution == ansible_distribution
+  with_items:
+    - "CentOS"
+    - "RedHat"
+  loop_control:
+    loop_var: distribution
+
+#
+# Include system specific tasks.
+#
+
+- include_tasks: "{{ os_family }}.yml"
+  when: ansible_os_family == os_family
+  with_items:
+    - "Debian"
+    - "RedHat"
+    - "Windows"
+  loop_control:
+    loop_var: os_family

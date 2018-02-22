@@ -1,0 +1,135 @@
+---
+
+#
+# Install Ansible requirements (Python).
+#
+
+- hosts: all:!windows
+  gather_facts: False
+  roles:
+  - role: ansible-requirements
+  tags:
+  - always
+
+#
+# Install Docker EE
+#
+- hosts: all:!windows
+  roles:
+  - role: docker-ee-install
+  tags:
+  - engine
+  vars:
+    docker_ee_subscriptions:
+      Ubuntu: "{{ docker_ee_subscriptions_ubuntu|default(omit) }}"
+      RedHat: "{{ docker_ee_subscriptions_redhat|default(omit) }}"
+      CentOS: "{{ docker_ee_subscriptions_centos|default(omit) }}"
+
+- hosts: windows
+  roles:
+  - role: docker-ee-install
+  tags:
+  - engine
+
+#
+# Fetch private dev images (optional).
+#
+- import_playbook: dev.yml
+  when: use_dev_version is defined and use_dev_version
+
+#
+# Initialize Swarm.
+#
+- hosts: ucp-primary
+  roles:
+  - role: docker-swarm-init
+  tags:
+  - docker_swarm
+  - docker_swarm_manager
+  - docker_swarm_leader
+
+#
+# Join Swarm (as managers).
+#
+- hosts: managers:!ucp-primary
+  roles:
+  - role: docker-swarm-join
+  tags:
+  - docker_swarm
+  - docker_swarm_manager
+  vars:
+    docker_swarm_token_type: "swarm-manager-token"
+    docker_swarm_leader: "ucp-primary"
+
+#
+# Join Swarm (as workers).
+#
+- hosts: workers
+  roles:
+  - role: docker-swarm-join
+  tags:
+  - docker_swarm
+  - docker_swarm_worker
+  vars:
+    docker_swarm_token_type: "swarm-worker-token"
+    docker_swarm_leader: "ucp-primary"
+
+#
+# Verify Swarm state (managers only).
+#
+- hosts: managers
+  roles:
+  - role: docker-swarm-validate-state
+  vars:
+    expected_docker_swarm_managers: "{{ groups['managers'] | length }}"
+    expected_docker_swarm_workers: "{{ groups['workers'] | length }}"
+
+#
+# Install Cloudstor
+#
+- name: "Install Cloudstor"
+  hosts: all:!windows
+  roles:
+  - role: cloudstor-install
+  tags:
+  - cloudstor
+
+#
+# Install UCP.
+#
+- hosts: ucp-primary
+  roles:
+  - role: docker-ucp-install
+
+#
+# Verify UCP state (managers).
+#
+- hosts: managers
+  roles:
+  - role: docker-ucp-manager-validate-state
+
+#
+# Verify UCP state (workers).
+#
+- hosts: workers
+  roles:
+  - role: docker-ucp-worker-validate-state
+
+#
+# Install DTR.
+#
+- hosts: dtr-primary
+  roles:
+  - role: docker-dtr-install
+  vars:
+    ucp_nodes: managers
+
+#
+# Join DTR.
+#
+- hosts: dtr-replicas
+  roles:
+  - role: docker-dtr-join
+  serial: 1
+  vars:
+    ucp_nodes: managers

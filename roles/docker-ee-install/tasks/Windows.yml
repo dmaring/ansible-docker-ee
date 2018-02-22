@@ -1,0 +1,40 @@
+---
+- name: Enable Windows Container feature.
+  win_feature:
+    name: Containers
+    state: present
+  register: win_container_feat
+
+- name: Restart
+  win_reboot:
+    force: yes
+  when: win_container_feat.reboot_required
+
+- name: Wait for system to become reachable over WinRM
+  wait_for_connection:
+    timeout: 1200
+
+- name: Install NuGet 2.8.5.201.
+  win_shell: Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force
+
+- name: Install DockerMsftProvider.
+  win_psmodule:
+    name: DockerMsftProvider
+    repository: PSGallery
+    state: present
+
+- name: Install Docker provider.
+  win_psmodule:
+    name: DockerProvider
+    state: present
+
+- name: Install Docker {{ docker_ee_package_version_win }}
+  win_shell: Install-Package Docker -ProviderName DockerProvider -Force {% if docker_ee_package_version_win is defined %} -RequiredVersion {{ docker_ee_package_version_win }} {% endif %}
+  args:
+    creates: C:\Program Files\docker\dockerd.exe
+
+- name: Start docker service
+  win_service:
+    name: docker
+    state: started
+    start_mode: auto

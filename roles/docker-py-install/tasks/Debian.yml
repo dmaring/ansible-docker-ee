@@ -1,0 +1,30 @@
+---
+- name: Install Ansible pip requirements.
+  become: yes
+  apt:
+    name: "{{ package }}"
+    state: present
+    install_recommends: no
+  with_items:
+    - python-all
+    - python-pkg-resources
+    - python-pip
+    - python-virtualenv
+  loop_control:
+    loop_var: package
+  tags:
+    - python
+    - python2
+    - virtualenv
+    - pip
+
+- pip:
+    name: "{{ module }}"
+  with_items:
+    - setuptools
+    - docker-py
+    - wheel
+  loop_control:
+    loop_var: module
+  tags:
+    - docker-py

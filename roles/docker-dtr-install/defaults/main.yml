@@ -1,0 +1,13 @@
+---
+# Package.
+docker_dtr_image_repository: docker
+docker_dtr_version: latest
+
+# UCP.
+docker_ucp_username: admin
+docker_ucp_lb: "{{ hostvars[groups[ucp_nodes][0]]['ansible_host'] }}"   # Fall back to IP address (for testing only)
+
+# Parameters.
+replica_https_port: 443
+replica_http_port: 80
+docker_dtr_lb: "{{ ansible_host }}"     # Fall back to host address (for testing only)

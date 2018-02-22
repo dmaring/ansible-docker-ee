@@ -1,0 +1,66 @@
+---
+#
+# Pre installation tasks.
+#
+- include_tasks: ".unix.pre.yml"
+
+#
+# Install dependencies.
+#
+
+- name: "Install dependencies."
+  apt:
+    name: "{{ package }}"
+    state: present
+    install_recommends: no
+  with_items:
+    - apt-utils
+    - apt-transport-https
+    - ca-certificates
+    - software-properties-common
+  loop_control:
+    loop_var: package
+
+#
+# Add repository to apk.
+#
+
+- name: "Add GPG key."
+  apt_key:
+    state: present
+    url: "{{ docker_ee_repository_url }}/gpg"
+  register: add_repository_key
+  ignore_errors: true
+
+- name: "Ensure curl is present (on older systems without SNI)."
+  apt:
+    name: curl
+    state: latest
+  when: add_repository_key | failed
+
+- name: "Add Docker apt key (alternative for older systems without SNI)."
+  shell: "curl -sSL {{ docker_ee_repository_url }}/gpg | sudo apt-key add -"
+  args:
+    warn: no
+  when: add_repository_key | failed
+
+- name: "Add docker EE repository ({{ docker_ee_repository }})."
+  apt_repository:
+    repo: deb [arch=amd64] "{{ docker_ee_repository_url }}" "{{ ansible_distribution_release | lower}}" "{{ docker_ee_repository }}"
+    state: present
+
+#
+# Install Docker EE.
+#
+
+- name: "Install Docker EE."
+  apt:
+    name: docker-ee
+    state: present
+    install_recommends: yes
+
+#
+# Post installation tasks.
+#
+
+- include_tasks: ".unix.post.yml"

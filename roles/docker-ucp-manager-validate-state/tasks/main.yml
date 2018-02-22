@@ -1,0 +1,9 @@
+---
+- name: Wait for Docker UCP to be accessible on 443.
+  wait_for:
+    port: 443
+
+- name: Check _ping route.
+  get_url:
+    url: https://127.0.0.1:443/_ping
+    dest: /dev/null

@@ -1,0 +1,41 @@
+---
+#
+# Check installation.
+#
+
+- name: "Ensure /etc/docker dir exists."
+  file:
+    path: /etc/docker
+    state: directory
+
+#
+# Permissions.
+#
+
+- name: "Get current user name (no sudo)."
+  become: False
+  set_fact:
+    current_user: "{{ ansible_user }}"
+
+- name: "Adding existing user {{ current_user }} to group docker."
+  user:
+    name: "{{ current_user }}"
+    groups: docker
+    append: yes
+  when:
+    - current_user != "root"
+
+#
+# Check if docker works correctly.
+#
+
+- name: "Test Docker."
+  shell: "docker version"
+  register: run_docker
+  failed_when: False
+
+- name: "Reload service docker (if not already running)"
+  systemd:
+    name: docker
+    state: restarted
+  when: run_docker.rc != 0

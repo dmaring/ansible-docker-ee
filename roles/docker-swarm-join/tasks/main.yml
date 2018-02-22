@@ -1,0 +1,9 @@
+---
+- include_tasks: "{{ os_family }}.yml"
+  when: ansible_os_family == os_family
+  with_items:
+    - "Debian"
+    - "Windows"
+    - "RedHat"
+  loop_control:
+    loop_var: os_family

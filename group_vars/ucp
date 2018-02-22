@@ -1,0 +1,11 @@
+---
+# Docker Universal Control Plane.
+# docker_ucp_version: latest
+
+# Subscription and certificate directories.
+# These path a relative to the root folder (containing inventory/, group_vars/, etc...)
+docker_ucp_certificate_directory: ssl_cert
+docker_ucp_license: license/Docker.lic
+
+# SAN (subject alternative names)
+# docker_ucp_san: <placeholder>

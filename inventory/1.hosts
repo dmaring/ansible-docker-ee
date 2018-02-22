@@ -1,0 +1,60 @@
+# In the file, you need provide hosts, as follows:
+#
+# [group]
+# <hostname> ansible_host=<ip_address> (...)
+# <hostname> ansible_host=<ip_address> (...)
+#
+# With:
+#
+# <hostname>: The name of the host (it has to be unique and will represent one single host)
+# <ip_address>: The IP address of the host.
+#
+
+#
+# Purpose-specific hosts.
+#
+
+# UCP.
+#
+# The first host (linux-ucp-managers-primary) will be the primary UCP node,
+# every other managers will automatically become replicas.
+#
+# linux-ucp-managers-primary must contain one and only one host.
+#
+# Currently, only Linux-based machines are eligible to become the primary node.
+#
+# N.B. All managers are ucp-managers.
+
+[linux-ucp-managers-primary]
+
+[linux-ucp-managers-replicas]
+
+[windows-ucp-managers-replicas]
+
+# DTR.
+#
+# The first host (linux-workers-dtr-primary) will be the primary DTR node, every
+# nodes listed under linux-dtr-workers-replicas and windows-dtr-workers-replicas
+# will be replicas.
+#
+# linux-dtr-primary must contain one and only one host.
+#
+# Currently, only Linux-based machines are eligible to become the primary node.
+#
+# N.B. All dtr-workers are considered workers but extra non-DTR workers can be
+# added via linux-workers or windows-workers.
+
+[linux-dtr-workers-primary]
+
+[linux-dtr-workers-replicas]
+
+[windows-dtr-workers-replicas]
+
+#
+# General purpose hosts.
+#
+
+# Extra workers.
+[linux-workers]
+
+[windows-workers]

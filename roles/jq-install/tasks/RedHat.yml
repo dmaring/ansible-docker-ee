@@ -1,0 +1,18 @@
+---
+- name: Install epel-release packages.
+  become: yes
+  yum:
+    name: epel-release
+    state: present
+    update_cache: yes
+  tags:
+    - epel-release
+
+- name: Install jq package.
+  become: yes
+  yum:
+    name: jq
+    state: present
+    update_cache: yes
+  tags:
+    - jq

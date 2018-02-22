@@ -1,0 +1,69 @@
+---
+
+# This playbook fragment is included when installing a development version of EE.
+# To use it you will need to set some additional parameters, e.g.
+#
+# use_dev_version=True
+# dev_registry_user=...
+# dev_registry_password=...
+# docker_dtr_image_repository=docker
+# docker_dtr_version=2.5.0-beta3
+# docker_ucp_image_repository=dockereng
+# docker_ucp_version=3.0.0-latest
+# docker_ee_version=17.06
+# docker_ee_package_version    =17.06.2.ee.7-0.3.tp3.el7.centos.x86_64
+# docker_ee_package_version_win=17.06.2-ee-7-tp3
+# 
+# dev_registry_user is a user with read access to {{docker_ucp_image_repository}}.
+
+# Log in, so that we can access the required images.
+- name: "Docker login"
+  hosts: all
+  sudo: True
+  tasks:
+  - name: "docker login"
+    raw: docker login -u "{{ dev_registry_user }}" -p "{{ dev_registry_password }}"
+    when: dev_registry_user is defined
+
+# When we later run the UCP installer, it will try to run ucp-agent on all the other nodes.
+# This will fail by default if ucp-agent is in a private repository.
+# We therefore query for the complete list of images needed and then use our login session
+# to pull them all now, so they will be available later when they are needed.
+- name: "Query for other required dev images"
+  hosts: ucp-primary
+  sudo: True
+  tasks:
+  - name: "ucp images"
+    shell: docker run --rm "{{ docker_ucp_image_repository }}/ucp:{{ docker_ucp_version }}" images --image-version "dev:" --list
+    register: ucp_images
+    when: use_dev_version
+
+# Pull all required UCP images to all UCP nodes.
+- name: "Pull required UCP dev images."
+  hosts: all:!windows
+  sudo: True
+  tasks:
+  - name: "docker pull"
+    shell: "docker pull {{ item }}"
+    with_items: "{{ hostvars[groups['ucp-primary'][0]].ucp_images.stdout_lines }}"
+    when: use_dev_version
+
+# Windows
+
+- name: "Query for required Windows images"
+  hosts: ucp-primary
+  sudo: True
+  tasks:
+  - name: "Query for required Windows images"
+    shell: docker run --rm "{{ docker_ucp_image_repository }}/ucp:{{ docker_ucp_version }}" images --image-version "dev:" --list --enable-windows
+    register: win_images
+    when: use_dev_version
+
+- name: "Configure Windows workers"
+  hosts: windows
+  sudo: True
+  tasks:
+  - name: "docker pull"
+    raw: "docker pull {{ item }}"
+    with_items: "{{ hostvars[groups['ucp-primary'][0]].win_images.stdout_lines }}"
+    when: use_dev_version
